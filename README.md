@@ -31,32 +31,40 @@
 
 ## **📂 Структура репозитория**
 
-/  
-├── .env.example                # Шаблон переменных окружения  
-├── docker-compose.yml          # Главный оркестратор инфраструктуры  
-├── docker/                     # Конфигурации Docker-образов  
-│   ├── nginx/                  # Конфиг проксирования только для интерфейса Битрикс (с запретом к /upload/reports/)  
-│   ├── php/                    # Dockerfile монолита (Opcache, mysqli)  
-│   └── mysql/                  # Конфиг bitrix.cnf и init-скрипты Master/Slave  
-└── src/  
-    ├── bitrix/local/           # Исходный код Битрикс (монтируется в контейнер)  
-    │   ├── components/app/     # Компонент (Vue 2 + D7 API Gateway Controller)  
-    │   │   └── order.history/  # Файлы: class.php (контроллер), template.php (Vue-фронт)  
-    │   └── modules/app.orders/ # Локальный модуль D7  
-    │       ├── install/        # Инсталлятор модуля  
-    │       │   ├── db/mysql/   # SQL-миграции (install.sql, uninstall.sql)  
-    │       │   ├── index.php   # Основной класс инсталлятора  
-    │       │   └── version.php # Версионирование  
-    │       ├── lib/            # D7 классы (строго нижний регистр для автозагрузки!)  
-    │       │   ├── eventhandlers/ # Обработчик OnSaleOrderSaved  
-    │       │   ├── orm/        # ORM-сущность ReportTaskTable  
-    │       │   └── rabbitmq/   # Клиент для HTTP API RabbitMQ  
-    │       └── options.php     # GUI настроек RabbitMQ и API-ключа  
-    └── microservice/           # Изолированный микросервис (SOLID)  
-        ├── app/                # Слои: Controllers, Repositories (Slave/Master), Services  
-        ├── public/index.php    # Точка входа для внутреннего HTTP API (роутер)  
-        ├── worker.php          # Фоновый демон для RabbitMQ  
+Вот структура вашего проекта в формате Markdown. Я сохранил все ваши комментарии и иерархию, чтобы она легко читалась и была готова для документации (например, для файла `README.md`).
+
+---
+
+## Структура проекта: Bitrix Monolith + Microservice
+
+```text
+/
+├── .env.example                # Шаблон переменных окружения
+├── docker-compose.yml          # Главный оркестратор инфраструктуры
+├── docker/                     # Конфигурации Docker-образов
+│   ├── nginx/                  # Конфиг проксирования только для интерфейса Битрикс (с запретом к /upload/reports/)
+│   ├── php/                    # Dockerfile монолита (Opcache, mysqli)
+│   └── mysql/                  # Конфиг bitrix.cnf и init-скрипты Master/Slave
+└── src/
+    ├── bitrix/local/           # Исходный код Битрикс (монтируется в контейнер)
+    │   ├── components/app/     # Компонент (Vue 2 + D7 API Gateway Controller)
+    │   │   └── order.history/  # Файлы: class.php (контроллер), template.php (Vue-фронт)
+    │   └── modules/app.orders/ # Локальный модуль D7
+    │       ├── install/        # Инсталлятор модуля
+    │       │   ├── db/mysql/   # SQL-миграции (install.sql, uninstall.sql)
+    │       │   ├── index.php   # Основной класс инсталлятора
+    │       │   └── version.php # Версионирование
+    │       ├── lib/            # D7 классы (строго нижний регистр для автозагрузки!)
+    │       │   ├── eventhandlers/ # Обработчик OnSaleOrderSaved
+    │       │   ├── orm/        # ORM-сущность ReportTaskTable
+    │       │   └── rabbitmq/   # Клиент для HTTP API RabbitMQ
+    │       └── options.php     # GUI настроек RabbitMQ и API-ключа
+    └── microservice/           # Изолированный микросервис (SOLID)
+        ├── app/                # Слои: Controllers, Repositories (Slave/Master), Services
+        ├── public/index.php    # Точка входа для внутреннего HTTP API (роутер)
+        ├── worker.php          # Фоновый демон для RabbitMQ
         └── composer.json       # PSR-4 автозагрузчик и зависимости
+```
 
 ## **⚙️ Запуск проекта**
 
