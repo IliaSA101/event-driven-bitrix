@@ -1,0 +1,143 @@
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./src/bitrix:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+      - microservice-api
+    networks:
+      - app-network
+
+  php:
+    build:
+      context: ./docker/php
+    volumes:
+      - ./src/bitrix:/var/www/html
+    depends_on:
+      db-master:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  db-master:
+    image: mariadb:10.6
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    command: >
+      --server-id=1
+      --log-bin=mysql-bin
+    volumes:
+      - master-data:/var/lib/mysql
+      - ./docker/mysql/master:/docker-entrypoint-initdb.d
+      - ./docker/mysql/bitrix.cnf:/etc/mysql/conf.d/bitrix.cnf
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  db-slave:
+    image: mariadb:10.6
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    command: >
+      --server-id=2
+      --read-only=1
+    volumes:
+      - slave-data:/var/lib/mysql
+      - ./docker/mysql/slave:/docker-entrypoint-initdb.d
+      - ./docker/mysql/bitrix.cnf:/etc/mysql/conf.d/bitrix.cnf
+    depends_on:
+      db-master:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "127.0.0.1:5672:5672"   # Порт для AMQP (микросервис)
+      - "127.0.0.1:15672:15672" # Web-интерфейс RabbitMQ (логин/пароль)
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Контейнер для обслуживания HTTP API микросервиса
+  microservice-api:
+    build:
+      context: ./docker/microservice
+    # ИЗМЕНЕНИЕ: Явно указываем index.php как роутер, иначе ломаются ЧПУ
+    command: php -S 0.0.0.0:8000 -t /app/public /app/public/index.php
+    restart: unless-stopped
+    volumes:
+      - ./src/microservice:/app
+      - ./src/bitrix/upload:/var/www/html/upload
+    working_dir: /app/public
+    env_file: 
+      - .env
+    networks:
+      - app-network
+
+  # Контейнер для фонового демона, читающего очередь RabbitMQ
+  microservice_worker:
+    build:
+      context: ./docker/microservice
+    command: php /app/worker.php
+    restart: unless-stopped
+    volumes:
+      - ./src/microservice:/app
+      - ./src/bitrix/upload:/var/www/html/upload
+    env_file: 
+      - .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-slave:
+        condition: service_healthy
+      db-master:
+        condition: service_healthy
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  master-data:
+  slave-data:

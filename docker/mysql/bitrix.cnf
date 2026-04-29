@@ -1,0 +1,26 @@
+[mysqld]
+# Убираем строгий режим (критично для старого ядра Битрикс)
+sql_mode = ""
+innodb_strict_mode = OFF
+
+# Уровень изоляции транзакций (Критично для работы D7 и ORM)
+transaction-isolation = READ-COMMITTED
+
+# Оптимизация производительности InnoDB (Рекомендации 1С-Битрикс)
+# 2 = писать в кэш ОС при каждом коммите, а на диск раз в секунду. Дает х10 к скорости записи.
+innodb_flush_log_at_trx_commit = 2
+
+# Использовать прямое чтение/запись, минуя кэш ОС (если диск SSD)
+innodb_flush_method = O_DIRECT
+
+# Размеры буферов и кэшей
+max_allowed_packet = 128M
+innodb_buffer_pool_size = 512M
+innodb_log_file_size = 128M
+
+# Кодировки по умолчанию (utf8mb4 для поддержки эмодзи)
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# --- ИЗМЕНЕНИЯ ЗДЕСЬ: Синхронизация времени с PHP ---
+default-time-zone = '+03:00'

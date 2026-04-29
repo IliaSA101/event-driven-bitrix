@@ -1,0 +1,26 @@
+# IDE
+.idea/
+.vscode/
+
+# Environment
+.env
+.env.*
+# Разрешаем отслеживать файлы-шаблоны для удобства развертывания
+!.env.example
+!.env.example.test
+
+# Bitrix Core (Игнорируем всё ядро и загрузки, оставляем только нашу разработку)
+src/bitrix/*
+!src/bitrix/local/
+
+# Microservice Dependencies
+src/microservice/vendor/
+
+# Сгенерированные артефакты и логи
+*.csv
+*.log
+src/bitrix/upload/reports/
+
+# OS generated files
+.DS_Store
+Thumbs.db
